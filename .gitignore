@@ -1,0 +1,59 @@
+# Build output
+build/
+**/build/
+target/
+dist/
+out/
+
+# Compiled binaries and debug artifacts
+*.o
+*.obj
+*.pdb
+*.efi
+*.sys
+*.elf
+*.bin
+*.img
+*.iso
+*.ect
+*.lbr
+*.a
+*.lib
+*.dll
+*.exe
+*.so
+*.dylib
+
+# Temporary and backup files
+*.bak
+*.bak.*
+*.tmp
+*.orig
+*.rej
+*.log
+
+# Local/editor files
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+
+# Extensionless generated executables
+/rxfs/tools/mkfs.rxfs
+/rxfs/tools/mount.rxfs
+/rxfs/tools/rxfs-attr
+/rxfs/tools/rxfs-inspect
+/rxfs/tools/rxfs-snapshot
+/tools/ect/ect-tool
+/tools/ect/ectpack
+/tools/ect/elf2ect
+/tools/ect/pack_kernel_ect
+/tools/ect/starlix-engine
+/tools/ect/starlix-runtime
+/tools/lbr/elf2lbr
+/tools/lbr/lbr-tool
+/tools/lbr/lbrpack
+/tools/mkssp/mkssp
+
+# Temporary generated source fixtures
+*.new

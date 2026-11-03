@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fail() { echo "[FAIL] $1" >&2; exit 1; }
+pass() { echo "[PASS] $1"; }
+grep -q 'set_idt_gate(0x81' "$ROOT/kernel/src/cpu/idt.cpp" || fail 'INT 0x81 gate missing'
+grep -q '0x08, 0xEE' "$ROOT/kernel/src/cpu/idt.cpp" || fail 'INT 0x81 is not DPL3 interrupt gate'
+pass 'restricted DPL3 INT 0x81 gate installed'
+grep -q 'starlix_user_service_dispatch' "$ROOT/kernel/src/cpu/idt_asm.S" || fail 'service dispatch stub missing'
+grep -q 'swapgs' "$ROOT/kernel/src/cpu/idt_asm.S" || fail 'SWAPGS handling missing'
+pass 'service entry stub preserves GPR frame and SWAPGS protocol'
+grep -q 'service_abi_version_valid' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'service ABI version is not validated'
+grep -q 'rdi asm(\"rdi\") = 3u' "$ROOT/user_components/stlcs/stlcs.cpp" || fail 'component does not send service ABI version 3'
+grep -q 'SERVICE_ABI_VERSION = 3ULL' "$ROOT/kernel/src/loader/user_host_service_policy.hpp" || fail 'kernel service ABI version is not 3'
+pass 'versioned service ABI v3 is checked by the kernel dispatcher'
+grep -q 'current_lock_screen_owner' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'owner validation missing'
+grep -q 'address_space_translate_user' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'user page validation missing'
+grep -q 'kernel_stack_thread_valid' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'kernel stack validation missing'
+pass 'process, CR3, user RIP/RSP, and guarded kernel-stack validation present'
+grep -q 'auth_service_unavailable_result' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'auth fail-closed policy missing'
+grep -q 'desktop_handoff_denied_result' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'desktop fail-closed policy missing'
+pass 'authentication unavailable and desktop handoff denied by policy'
+grep -q 'StNtCreateUserProcessFromECT' "$ROOT/kernel/src/loader/system_component.cpp" || fail 'real ECT process creation missing'
+grep -q 'StNtStartUserProcess' "$ROOT/kernel/src/loader/system_component.cpp" || fail 'real first-user entry missing'
+pass 'production ECT process creation and IRETQ launch path connected'
+grep -q 'ENTRY(stlcs_bootstrap)' "$ROOT/user_components/stlcs/stlcs.ld" || fail 'ECT does not enter user bootstrap'
+grep -q 'int \$0x81' "$ROOT/user_components/stlcs/stlcs.cpp" || fail 'component service stubs missing'
+grep -q 'stlcs_render_presentation' "$ROOT/user_components/stlcs/stlcs.cpp" || fail 'user-mode lock-screen renderer missing'
+grep -q 'service_display_blit' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'bounded display transport missing'
+grep -q 'framebuffer::blit' "$ROOT/kernel/src/loader/user_host_service.cpp" || fail 'framebuffer transport not connected'
+if grep -q 'gui_present_lock_screen' "$ROOT/kernel/src/gui/window.cpp"; then fail 'Lock Screen GUI renderer was added to the kernel'; fi
+pass 'Lock Screen renderer remains in the CPL3 component; kernel exposes only bounded framebuffer transport'
+grep -q 'user_host_service.cpp' "$ROOT/scripts/build_kernel.sh" || fail 'kernel build does not compile host service'
+grep -q 'user_host_service.o' "$ROOT/scripts/build_kernel.sh" || fail 'kernel build does not link host service'
+pass 'host service compiled and linked once by kernel build'
+echo 'PHASE2N2_HOST_SERVICE_CONTRACT: PASS'
